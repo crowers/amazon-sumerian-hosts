@@ -64,10 +64,12 @@ class TextToSpeechFeature extends AbstractTextToSpeechFeature {
       const {url} = result;
 
       // Create an Audio object that points to the presigned url
-      const audio = new Audio(url);
+      const audio = document.getElementById('audioPlayer');
       audio.loop = this.loop;
       audio.crossOrigin = 'anonymous';
       audio.preload = 'auto';
+      audio.muted = false;
+      audio.src = url;
       result.audio = audio;
 
       return new Promise(resolve => {
@@ -77,7 +79,7 @@ class TextToSpeechFeature extends AbstractTextToSpeechFeature {
         });
 
         // Start loading the audio
-        document.body.appendChild(audio);
+        //document.body.appendChild(audio);
         audio.load();
       });
     });

@@ -9,196 +9,237 @@ import AbstractTextToSpeechFeature from './AbstractTextToSpeechFeature';
  * @alias core/TextToSpeechFeature
  */
 class TextToSpeechFeature extends AbstractTextToSpeechFeature {
-  constructor(...args) {
-    super(...args);
+    constructor(...args) {
+        super(...args);
 
-    this._enabled = false;
-    this._setAudioContext();
-    this._observeAudioContext();
-  }
-
-  /**
-   * Store the audio context that will be used to ensure audio can be played.
-   *
-   * @private
-   */
-  _setAudioContext() {
-    this._audioContext = new AudioContext();
-  }
-
-  /**
-   * Listen for state changes on the audio context to determine whether the feature
-   * is enabled.
-   *
-   * @private
-   */
-  _observeAudioContext() {
-    if (this._audioContext) {
-      this._audioContext.onstatechange = () => {
-        if (this._audioContext.state === 'running') {
-          this._enabled = true;
-        } else {
-          this._enabled = false;
-          console.warn(
-            'The audio context is not running. Speech will not be able to be played until it is resumed. Use the "TextToSpeechFeature.resumeAudio" method to try to resume it after a user gesture.'
-          );
-        }
-      };
-
-      this._audioContext.onstatechange();
+        this._enabled = false;
+        this._setAudioContext();
+        this._observeAudioContext();
     }
-  }
 
-  /**
-   * Create an Audio object of speech audio for the given speech text.
-   *
-   * @private
-   *
-   * @param {Object} params - Parameters object compatible with Polly.synthesizeSpeech.
-   *
-   * @returns {Promise} Resolves with an object containing the audio URL and Audio
-   * object.
-   */
-  _synthesizeAudio(params) {
-    return super._synthesizeAudio(params).then(result => {
-      const {url} = result;
+    /**
+     * Store the audio context that will be used to ensure audio can be played.
+     *
+     * @private
+     */
+    _setAudioContext() {
+        this._audioContext = new AudioContext();
+    }
 
-      // Create an Audio object that points to the presigned url
-      const audio = document.getElementById('audioPlayer');
-      audio.loop = this.loop;
-      audio.crossOrigin = 'anonymous';
-      audio.preload = 'auto';
-      audio.muted = false;
-      audio.src = url;
-      result.audio = audio;
+    /**
+     * Listen for state changes on the audio context to determine whether the feature
+     * is enabled.
+     *
+     * @private
+     */
+    _observeAudioContext() {
+        if (this._audioContext) {
+            this._audioContext.onstatechange = () => {
+                if (this._audioContext.state === 'running') {
+                    this._enabled = true;
+                } else {
+                    this._enabled = false;
+                    console.warn(
+                        'The audio context is not running. Speech will not be able to be played until it is resumed. Use the "TextToSpeechFeature.resumeAudio" method to try to resume it after a user gesture.'
+                    );
+                }
+            };
 
-      return new Promise(resolve => {
-        // Resolve once the minimum amount is loaded
-        audio.addEventListener('canplaythrough', () => {
-          resolve(result);
+            this._audioContext.onstatechange();
+        }
+    }
+
+    isAppleDevice() {
+        return [
+          'iPad Simulator',
+          'iPhone Simulator',
+          'iPod Simulator',
+          'iPad',
+          'iPhone',
+          'iPod'
+        ].includes(navigator.platform)
+        // iPad on iOS 13 detection
+        || (navigator.userAgent.includes("Mac"))
+    }
+
+    /**
+     * Create an Audio object of speech audio for the given speech text.
+     *
+     * @private
+     *
+     * @param {Object} params - Parameters object compatible with Polly.synthesizeSpeech.
+     *
+     * @returns {Promise} Resolves with an object containing the audio URL and Audio
+     * object.
+     */
+    _synthesizeAudio(params) {
+        return super._synthesizeAudio(params).then(result => {
+            const {
+                url
+            } = result;
+
+            // If isAppleDevice use on page Audio
+            const isAppleDevice = this.isAppleDevice();
+            let audio = null;
+            // Create an Audio object that points to the presigned url
+            if (isAppleDevice) {
+                console.log(`Detected Apple Device - using on-page audio player`);
+                audio = document.getElementById('audioPlayer');
+                audio.src = url;
+            } else {
+                console.log(`Using dynamic audio player`);
+                audio = new Audio(url);
+            }
+            audio.loop = this.loop;
+            audio.crossOrigin = 'anonymous';
+            audio.preload = 'auto';
+            audio.muted = false;
+            
+            result.audio = audio;
+
+            return new Promise(resolve => {
+                // Resolve once the minimum amount is loaded
+                audio.addEventListener('canplaythrough', () => {
+                    resolve(result);
+                });
+
+                // Start loading the audio
+                if (!isAppleDevice) {
+                    // Non iOS/iPadOS/Mac only
+                    document.body.appendChild(audio);
+                }
+                audio.load();
+            });
+        });
+    }
+
+    /**
+     * Create a new Speech object for the speaker.
+     *
+     * @private
+     *
+     * @param {TextToSpeech} speaker - The TextToSpeech instance that will own the speech.
+     * @param {string} text - Text of the speech.
+     * @param {Object} speechmarks - Speechmarks for the speech.
+     * @param {Object} audioConfig - Audio for the speech.
+     *
+     * @returns {AbstractSpeech}
+     */
+    _createSpeech(text, speechmarks, audioConfig) {
+        return new Speech(this, text, speechmarks, audioConfig);
+    }
+
+    /**
+     * Gets whether or not the audio context is running and speech can be played.
+     *
+     * @readonly
+     * @type {boolean}
+     */
+    get enabled() {
+        return this._enabled;
+    }
+
+    /**
+     * Try to resume the audio context. This will be automatically executed each time
+     * speech is played or resumed. If using manually, it should be called after a
+     * user interaction occurs.
+     *
+     * @returns {Deferred} - Resolves once the audio context has resumed.
+     */
+    resumeAudio() {
+        const promise = new Deferred((resolve, reject) => {
+            // Check if the AudioContext is initialise
+            // 'suspended' means we need user input first
+            if (this._audioContext && this._audioContext.state === 'suspended') {
+                console.log('TextToSpeechFeature resumeAudio: AudioContext in suspended state - need user input');
+            }
+            this._audioContext
+                .resume()
+                .then(() => {
+                    this._enabled = true;
+                    console.log('TextToSpeechFeature resumeAudio: AudioContext enabled');
+                    resolve();
+                })
+                .catch(e => {
+                    this._enabled = false;
+                    console.log('TextToSpeechFeature resumeAudio: AudioContext disabled');
+                    reject(e);
+                });
+        });
+        return promise;
+    }
+
+    _startSpeech(text, config, playMethod = 'play') {
+        const currentPromise = {
+            play: new Deferred(
+                undefined,
+                () => {
+                    currentPromise.speech.cancel();
+                },
+                () => {
+                    currentPromise.speech.cancel();
+                },
+                () => {
+                    currentPromise.speech.cancel();
+                }
+            ),
+            speech: new Deferred(),
+        };
+        this._currentPromise = currentPromise;
+
+        // Try to start the audio context
+        this.resumeAudio().then(() => {
+            // Exit if the promise is no longer pending because of user interaction
+            if (!currentPromise.play.pending) {
+                return;
+            }
+            // Cancel if another call to play has already been made
+            else if (this._currentPromise !== currentPromise) {
+                currentPromise.play.cancel();
+                return;
+            }
+
+            // The audio context is running so the speech can be played
+            if (this._enabled) {
+                super._startSpeech(text, config, playMethod);
+            }
+            // Reject if the audio context is not running
+            else {
+                currentPromise.reject(
+                    new Error(
+                        `Cannot ${playMethod} speech on host ${this._host.id}. The audio context is not running. Use the "TextToSpeechFeature.resumeAudio" method to try to resume it after a user gesture.`
+                    )
+                );
+            }
         });
 
-        // Start loading the audio
-        //document.body.appendChild(audio);
-        audio.load();
-      });
-    });
-  }
+        return currentPromise.play;
+    }
 
-  /**
-   * Create a new Speech object for the speaker.
-   *
-   * @private
-   *
-   * @param {TextToSpeech} speaker - The TextToSpeech instance that will own the speech.
-   * @param {string} text - Text of the speech.
-   * @param {Object} speechmarks - Speechmarks for the speech.
-   * @param {Object} audioConfig - Audio for the speech.
-   *
-   * @returns {AbstractSpeech}
-   */
-  _createSpeech(text, speechmarks, audioConfig) {
-    return new Speech(this, text, speechmarks, audioConfig);
-  }
+    play(text, config) {
+        return this._startSpeech(text, config, 'play');
+    }
 
-  /**
-   * Gets whether or not the audio context is running and speech can be played.
-   *
-   * @readonly
-   * @type {boolean}
-   */
-  get enabled() {
-    return this._enabled;
-  }
+    resume(text, config) {
+        return this._startSpeech(text, config, 'resume');
+    }
 
-  /**
-   * Try to resume the audio context. This will be automatically executed each time
-   * speech is played or resumed. If using manually, it should be called after a
-   * user interaction occurs.
-   *
-   * @returns {Deferred} - Resolves once the audio context has resumed.
-   */
-  resumeAudio() {
-    const promise = new Deferred((resolve, reject) => {
-      this._audioContext
-        .resume()
-        .then(() => {
-          this._enabled = true;
-          resolve();
-        })
-        .catch(e => {
-          this._enabled = false;
-          reject(e);
+    installApi() {
+        const api = super.installApi();
+
+        Object.defineProperties(api, {
+            /**
+             * @memberof TextToSpeechFeature
+             * @instance
+             * @see core/TextToSpeechFeature#enabled
+             */
+            enabled: {
+                get: () => this._enabled,
+            },
         });
-    });
-    return promise;
-  }
 
-  _startSpeech(text, config, playMethod = 'play') {
-    const currentPromise = {
-      play: new Deferred(
-        undefined,
-        () => { currentPromise.speech.cancel(); },
-        () => { currentPromise.speech.cancel(); },
-        () => { currentPromise.speech.cancel(); }
-      ),
-      speech: new Deferred(),
-    };
-    this._currentPromise = currentPromise;
-
-    // Try to start the audio context
-    this.resumeAudio().then(() => {
-      // Exit if the promise is no longer pending because of user interaction
-      if (!currentPromise.play.pending) {
-        return;
-      }
-      // Cancel if another call to play has already been made
-      else if (this._currentPromise !== currentPromise) {
-        currentPromise.play.cancel();
-        return;
-      }
-
-      // The audio context is running so the speech can be played
-      if (this._enabled) {
-        super._startSpeech(text, config, playMethod);
-      }
-      // Reject if the audio context is not running
-      else {
-        currentPromise.reject(
-          new Error(
-            `Cannot ${playMethod} speech on host ${this._host.id}. The audio context is not running. Use the "TextToSpeechFeature.resumeAudio" method to try to resume it after a user gesture.`
-          )
-        );
-      }
-    });
-
-    return currentPromise.play;
-  }
-
-  play(text, config) {
-    return this._startSpeech(text, config, 'play');
-  }
-
-  resume(text, config) {
-    return this._startSpeech(text, config, 'resume');
-  }
-
-  installApi() {
-    const api = super.installApi();
-
-    Object.defineProperties(api, {
-      /**
-       * @memberof TextToSpeechFeature
-       * @instance
-       * @see core/TextToSpeechFeature#enabled
-       */
-      enabled: {
-        get: () => this._enabled,
-      },
-    });
-
-    return api;
-  }
+        return api;
+    }
 }
 
 export default TextToSpeechFeature;

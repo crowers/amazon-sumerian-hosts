@@ -86,6 +86,7 @@ class TextToSpeechFeature extends AbstractTextToSpeechFeature {
              if (isiOSDevice) {
                 console.log(`Detected Apple Device - using on-page audio player`);
                 audio = document.getElementById('audioPlayer');
+                audio.src = '';
                 audio.src = url;
             } else {
                 console.log(`Using dynamic audio player`);

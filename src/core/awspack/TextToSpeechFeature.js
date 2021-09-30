@@ -51,14 +51,16 @@ class TextToSpeechFeature extends AbstractTextToSpeechFeature {
     }
 
     isiOSDevice() {
-        return [
-          'iPad Simulator',
-          'iPhone Simulator',
-          'iPod Simulator',
-          'iPad',
-          'iPhone',
-          'iPod'
-        ].includes(navigator.platform)
+        let result =
+            ["iPad Simulator", "iPhone Simulator", "iPod Simulator", "iPad", "iPhone", "iPod"].includes(
+                navigator.platform
+            );
+        if (!result) {
+            result = navigator?.maxTouchPoints || 0;
+            result = result > 0 && navigator.platform.includes('Mac');
+        }
+        console.log(`Platform isiOSDevice? ${result} platform: ${navigator.platform} maxTouchPoints: ${navigator?.maxTouchPoints || 0}`);
+        return result;
     }
 
     /**

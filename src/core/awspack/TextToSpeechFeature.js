@@ -1,3 +1,4 @@
+/* eslint-disable indent */
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 import Speech from 'app/awspack/Speech';
@@ -58,7 +59,7 @@ class TextToSpeechFeature extends AbstractTextToSpeechFeature {
           'iPhone',
           'iPod'
         ].includes(navigator.platform)
-    }    
+    }
 
     /**
      * Create an Audio object of speech audio for the given speech text.

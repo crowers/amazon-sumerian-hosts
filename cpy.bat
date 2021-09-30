@@ -1,0 +1,1 @@
+copy C:\Crowers\crowers-amazon-sumerian-hosts\dist\host.three.js C:\Crowers\flow-player\app\static\host.three.js

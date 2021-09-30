@@ -49,7 +49,7 @@ class TextToSpeechFeature extends AbstractTextToSpeechFeature {
         }
     }
 
-    isAppleDevice() {
+    isiOSDevice() {
         return [
           'iPad Simulator',
           'iPhone Simulator',
@@ -58,9 +58,7 @@ class TextToSpeechFeature extends AbstractTextToSpeechFeature {
           'iPhone',
           'iPod'
         ].includes(navigator.platform)
-        // iPad on iOS 13 detection
-        || (navigator.userAgent.includes("Mac"))
-    }
+    }    
 
     /**
      * Create an Audio object of speech audio for the given speech text.
@@ -78,11 +76,11 @@ class TextToSpeechFeature extends AbstractTextToSpeechFeature {
                 url
             } = result;
 
-            // If isAppleDevice use on page Audio
-            const isAppleDevice = this.isAppleDevice();
+            // If isiOSDevice use on page Audio
+            const isiOSDevice = this.isiOSDevice();
             let audio = null;
             // Create an Audio object that points to the presigned url
-            if (isAppleDevice) {
+             if (isiOSDevice) {
                 console.log(`Detected Apple Device - using on-page audio player`);
                 audio = document.getElementById('audioPlayer');
                 audio.src = url;
@@ -94,7 +92,7 @@ class TextToSpeechFeature extends AbstractTextToSpeechFeature {
             audio.crossOrigin = 'anonymous';
             audio.preload = 'auto';
             audio.muted = false;
-            
+
             result.audio = audio;
 
             return new Promise(resolve => {
@@ -104,8 +102,8 @@ class TextToSpeechFeature extends AbstractTextToSpeechFeature {
                 });
 
                 // Start loading the audio
-                if (!isAppleDevice) {
-                    // Non iOS/iPadOS/Mac only
+                if (!isiOSDevice) {
+                    // Non iOS/iPadOS only
                     document.body.appendChild(audio);
                 }
                 audio.load();
@@ -148,21 +146,14 @@ class TextToSpeechFeature extends AbstractTextToSpeechFeature {
      */
     resumeAudio() {
         const promise = new Deferred((resolve, reject) => {
-            // Check if the AudioContext is initialise
-            // 'suspended' means we need user input first
-            if (this._audioContext && this._audioContext.state === 'suspended') {
-                console.log('TextToSpeechFeature resumeAudio: AudioContext in suspended state - need user input');
-            }
             this._audioContext
                 .resume()
                 .then(() => {
                     this._enabled = true;
-                    console.log('TextToSpeechFeature resumeAudio: AudioContext enabled');
                     resolve();
                 })
                 .catch(e => {
                     this._enabled = false;
-                    console.log('TextToSpeechFeature resumeAudio: AudioContext disabled');
                     reject(e);
                 });
         });
@@ -173,14 +164,17 @@ class TextToSpeechFeature extends AbstractTextToSpeechFeature {
         const currentPromise = {
             play: new Deferred(
                 undefined,
-                () => {
+                result => {
                     currentPromise.speech.cancel();
+                    return result;
                 },
-                () => {
+                error => {
                     currentPromise.speech.cancel();
+                    return error;
                 },
-                () => {
+                cancel => {
                     currentPromise.speech.cancel();
+                    return cancel;
                 }
             ),
             speech: new Deferred(),
@@ -205,7 +199,7 @@ class TextToSpeechFeature extends AbstractTextToSpeechFeature {
             }
             // Reject if the audio context is not running
             else {
-                currentPromise.reject(
+                currentPromise.play.reject(
                     new Error(
                         `Cannot ${playMethod} speech on host ${this._host.id}. The audio context is not running. Use the "TextToSpeechFeature.resumeAudio" method to try to resume it after a user gesture.`
                     )

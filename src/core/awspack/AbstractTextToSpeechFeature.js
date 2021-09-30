@@ -634,7 +634,7 @@ class AbstractTextToSpeechFeature extends AbstractHostFeature {
       this._synthesizeAudio(audioParams),
     ]).then(results => {
       return this._createSpeech(text, ...results);
-    });
+    })
     this._speechCache[text] = speech;
 
     return speech;

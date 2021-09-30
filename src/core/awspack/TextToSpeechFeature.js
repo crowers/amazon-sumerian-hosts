@@ -63,11 +63,24 @@ class TextToSpeechFeature extends AbstractTextToSpeechFeature {
     return super._synthesizeAudio(params).then(result => {
       const {url} = result;
 
+      // If isAppleDevice use on page Audio
+      // const isAppleDevice = this.isAppleDevice();
+      let audio = null;
       // Create an Audio object that points to the presigned url
-      const audio = new Audio(url);
+      // if (isAppleDevice) {
+      //     console.log(`Detected Apple Device - using on-page audio player`);
+      //     audio = document.getElementById('audioPlayer');
+      //     audio.src = url;
+      // } else {
+      //     console.log(`Using dynamic audio player`);
+      //     audio = new Audio(url);
+      // }
+      audio = new Audio(url);
       audio.loop = this.loop;
       audio.crossOrigin = 'anonymous';
       audio.preload = 'auto';
+      audio.muted = false;
+
       result.audio = audio;
 
       return new Promise(resolve => {
@@ -77,6 +90,10 @@ class TextToSpeechFeature extends AbstractTextToSpeechFeature {
         });
 
         // Start loading the audio
+        // if (!isAppleDevice) {
+        //     // Non iOS/iPadOS/Mac only
+        //     document.body.appendChild(audio);
+        // }
         document.body.appendChild(audio);
         audio.load();
       });
@@ -136,9 +153,18 @@ class TextToSpeechFeature extends AbstractTextToSpeechFeature {
     const currentPromise = {
       play: new Deferred(
         undefined,
-        () => { currentPromise.speech.cancel(); },
-        () => { currentPromise.speech.cancel(); },
-        () => { currentPromise.speech.cancel(); }
+        result => {
+          currentPromise.speech.cancel();
+          return result;
+        },
+        error => {
+          currentPromise.speech.cancel();
+          return error;
+        },
+        cancel => {
+          currentPromise.speech.cancel();
+          return cancel;
+        }
       ),
       speech: new Deferred(),
     };
@@ -162,7 +188,7 @@ class TextToSpeechFeature extends AbstractTextToSpeechFeature {
       }
       // Reject if the audio context is not running
       else {
-        currentPromise.reject(
+        currentPromise.play.reject(
           new Error(
             `Cannot ${playMethod} speech on host ${this._host.id}. The audio context is not running. Use the "TextToSpeechFeature.resumeAudio" method to try to resume it after a user gesture.`
           )

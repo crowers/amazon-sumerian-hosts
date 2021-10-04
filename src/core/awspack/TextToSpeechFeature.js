@@ -88,7 +88,8 @@ class TextToSpeechFeature extends AbstractTextToSpeechFeature {
                 const idElement = document.getElementById('audioPlayerId');
                 if (idElement) {
                     // eslint-disable-next-line radix
-                    idElement.value = parseInt(idElement.value) + 1;
+                    //idElement.value = parseInt(idElement.value) + 1;
+                    idElement.value = 1;
                     console.log(`Using on-page audio player id: audioPlayer${idElement.value}`);
                     audio = document.getElementById(`audioPlayer${idElement.value}`);
                     audio.src = url;

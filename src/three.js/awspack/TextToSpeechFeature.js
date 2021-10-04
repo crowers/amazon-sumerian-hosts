@@ -77,7 +77,9 @@ class TextToSpeechFeature extends CoreTextToSpeechFeature {
       }
 
       // Set Audio object as the source
-      result.threeAudio.setMediaElementSource(result.audio);
+      if (!result.threeAudio.source) {
+        result.threeAudio.setMediaElementSource(result.audio);
+      }
 
       return result;
     });

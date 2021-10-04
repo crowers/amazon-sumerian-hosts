@@ -85,9 +85,14 @@ class TextToSpeechFeature extends AbstractTextToSpeechFeature {
             // Create an Audio object that points to the presigned url
              if (isiOSDevice) {
                 console.log(`Detected Apple Device - using on-page audio player`);
-                audio = document.getElementById('audioPlayer');
-                audio.src = '';
-                audio.src = url;
+                const idElement = document.getElementById('audioPlayerId');
+                if (idElement) {
+                    // eslint-disable-next-line radix
+                    idElement.value = parseInt(idElement.value) + 1;
+                    console.log(`Using on-page audio player id: audioPlayer${idElement.value}`);
+                    audio = document.getElementById(`audioPlayer${idElement.value}`);
+                    audio.src = url;
+                }
             } else {
                 console.log(`Using dynamic audio player`);
                 audio = new Audio(url);

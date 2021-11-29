@@ -157,7 +157,7 @@ class AbstractTextToSpeechFeature extends AbstractHostFeature {
       engine: undefined,
       language: undefined,
       audioFormat: 'mp3',
-      sampleRate: undefined,
+      sampleRate: 24000,
       speechmarkOffset: 0,
       minEndMarkDuration: 0.05,
       volume: 1,

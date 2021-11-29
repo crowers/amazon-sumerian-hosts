@@ -36,7 +36,7 @@ class TextToSpeechFeature extends CoreTextToSpeechFeature {
       engine: undefined,
       language: undefined,
       audioFormat: 'mp3',
-      sampleRate: undefined,
+      sampleRate: 24000,
       listener: undefined,
       attachTo: undefined,
     }

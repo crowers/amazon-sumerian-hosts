@@ -27,15 +27,15 @@ const sampleRates = {
   mp3: {
     rates: ['8000', '16000', '22050', '24000'],
     defaults: {
-      standard: '2050',
-      neural: '2400',
+      standard: '20500',
+      neural: '24000',
     },
   },
   pcm: {
     rates: ['8000', '16000'],
     defaults: {
-      standard: '1600',
-      neural: '1600',
+      standard: '16000',
+      neural: '16000',
     },
   },
 };
@@ -154,7 +154,7 @@ class AbstractTextToSpeechFeature extends AbstractHostFeature {
     host,
     options = {
       voice: undefined,
-      engine: undefined,
+      engine: 'neural',
       language: undefined,
       audioFormat: 'mp3',
       sampleRate: 24000,
@@ -200,6 +200,7 @@ class AbstractTextToSpeechFeature extends AbstractHostFeature {
     )
       ? options.sampleRate
       : this.constructor.POLLY_DEFAULTS.SampleRate;
+    console.log(`AbstractTextToSpeechFeature(): ${this._audioFormat} ${this._sampleRate} ${this._engine}`);
   }
 
   /**
@@ -1106,6 +1107,7 @@ class AbstractTextToSpeechFeature extends AbstractHostFeature {
    * @returns {Deferred}
    */
   play(text, config) {
+    console.log(`play`, config);
     return this._startSpeech(text, config, 'play');
   }
 
@@ -1171,10 +1173,10 @@ Object.defineProperties(AbstractTextToSpeechFeature, {
   },
   POLLY_DEFAULTS: {
     value: {
-      Engine: 'standard',
+      Engine: 'neural',
       LexiconNames: [],
       OutputFormat: 'mp3',
-      SampleRate: '22050',
+      SampleRate: '24000',
       Text: '',
       TextType: 'ssml',
       VoiceId: 'Amy',

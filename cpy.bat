@@ -1,1 +1,2 @@
+copy C:\Crowers\crowers-amazon-sumerian-hosts\dist\host.core.js C:\Crowers\flow-player\app\static\host.core.js
 copy C:\Crowers\crowers-amazon-sumerian-hosts\dist\host.three.js C:\Crowers\flow-player\app\static\host.three.js

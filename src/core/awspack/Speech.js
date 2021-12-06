@@ -99,10 +99,6 @@ class Speech extends AbstractSpeech {
    * @private
    */
   _playAudio() {
-    for (let playButton of document.getElementsByClassName("threeStoryPlaySpeech")) {
-        console.log(`Removing event listener on play button.`);
-        playButton.removeEventListener('touchstart', ()=>{this._restartAudioAndPlay()});
-    }
     if (this._speechmarkOffset < 0) {
       this._audio.currentTime = this._speechmarkOffset;
       setTimeout(() => {
@@ -149,9 +145,10 @@ class Speech extends AbstractSpeech {
         for (let playButton of document.getElementsByClassName("threeStoryPlaySpeech")) {
             console.log(`Setup event listener on play button.`);
             if (playButton.getAttribute("ready") === "true") {
-                this._playAudio();
+                this._restartAudioAndPlay();
             } else {
                 this.setupiOSSpeechPlayButtonListeners();
+                this._restartAudioAndPlay();
             }
         }
     }

@@ -112,10 +112,10 @@ class TextToSpeechFeature extends AbstractTextToSpeechFeature {
                 });
 
                 // Start loading the audio
-                if (!isiOSDevice) {
+                //if (!isiOSDevice) {
                     // Non iOS/iPadOS only
                     document.body.appendChild(audio);
-                }
+                //}
                 audio.load();
             });
         });

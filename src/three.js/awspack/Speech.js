@@ -58,6 +58,10 @@ class Speech extends CoreSpeech {
 
     return super.play(currentTime, onFinish, onError, onInterrupt);
   }
+
+  setupiOSSpeechPlayButtonListeners() {
+    return super.setupiOSSpeechPlayButtonListeners();
+  }
 }
 
 export default Speech;

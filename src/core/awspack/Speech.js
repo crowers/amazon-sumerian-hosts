@@ -65,24 +65,64 @@ class Speech extends AbstractSpeech {
     this._audio.volume = volume;
   }
 
+  isiOSDevice() {
+    let result =
+        ["iPad Simulator", "iPhone Simulator", "iPod Simulator", "iPad", "iPhone", "iPod"].includes(
+            navigator.platform
+        );
+    if (!result) {
+        result = navigator?.maxTouchPoints || 0;
+        result = result > 0 && navigator.platform.includes('Mac');
+    }
+    console.log(`Platform isiOSDevice? ${result} platform: ${navigator.platform} maxTouchPoints: ${navigator?.maxTouchPoints || 0}`);
+    return result;
+  }
+
+  setupiOSSpeechPlayButtonListeners() {
+    console.log(`setupiOSSpeechPlayButtonListeners Waiting for input...`);
+    for (let playButton of document.getElementsByClassName("threeStoryPlaySpeech")) {
+        console.log(`Setup event listener on play button.`);
+        playButton.removeEventListener('touchstart', ()=>{this._restartAudioAndPlay()});
+        playButton.addEventListener('touchstart', ()=>{this._restartAudioAndPlay()});
+        playButton.setAttribute("ready", "true");
+    }
+  }
+
+  _restartAudioAndPlay() {
+    this._audio.currentTime = 0;
+    this._playAudio();
+  }
+
   /**
    * Set the audio's current local time and play it.
    *
    * @private
    */
   _playAudio() {
+    for (let playButton of document.getElementsByClassName("threeStoryPlaySpeech")) {
+        console.log(`Removing event listener on play button.`);
+        playButton.removeEventListener('touchstart', ()=>{this._restartAudioAndPlay()});
+    }
     if (this._speechmarkOffset < 0) {
       this._audio.currentTime = this._speechmarkOffset;
       setTimeout(() => {
         if (this._playing) {
           this._audio.currentTime =
             (this._localTime + this._speechmarkOffset) / 1000;
-          this._audio.play();
+            try {
+                this._audio.play();
+            } catch (error) {
+                console.error(`_playAudio (1) catch exception ${error?.message || JSON.stringify(error)}`)
+            }
         }
       }, -this._speechmarkOffset);
     } else {
-      this._audio.currentTime = 0;
-      this._audio.play();
+        this._audio.currentTime = 0;
+        try {
+            this._audio.play();
+        } catch (error) {
+            console.error(`_playAudio (2) catch exception ${error?.message || JSON.stringify(error)}`)
+        }
     }
   }
 
@@ -101,8 +141,20 @@ class Speech extends AbstractSpeech {
 
   play(currentTime, onFinish, onError, onInterrupt) {
     this._audioFinished = false;
-    this._playAudio();
-
+    // On iOS only play audio if play button was pressed
+    if (!this.isiOSDevice()) {
+         this._playAudio();
+         
+    } else {
+        for (let playButton of document.getElementsByClassName("threeStoryPlaySpeech")) {
+            console.log(`Setup event listener on play button.`);
+            if (playButton.getAttribute("ready") === "true") {
+                this._playAudio();
+            } else {
+                this.setupiOSSpeechPlayButtonListeners();
+            }
+        }
+    }
     return super.play(currentTime, onFinish, onError, onInterrupt);
   }
 

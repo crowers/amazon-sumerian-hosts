@@ -89,6 +89,7 @@ class Speech extends AbstractSpeech {
   }
 
   _restartAudioAndPlay() {
+    this._speechmarkOffset = 0;
     this._audio.currentTime = 0;
     this._playAudio();
   }
@@ -140,19 +141,20 @@ class Speech extends AbstractSpeech {
     // On iOS only play audio if play button was pressed
     if (!this.isiOSDevice()) {
          this._playAudio();
-         
+         return super.play(currentTime, onFinish, onError, onInterrupt);
     } else {
+        let promise = super.play(currentTime, onFinish, onError, onInterrupt);
         for (let playButton of document.getElementsByClassName("threeStoryPlaySpeech")) {
-            console.log(`Setup event listener on play button.`);
             if (playButton.getAttribute("ready") === "true") {
                 this._restartAudioAndPlay();
             } else {
-                this.setupiOSSpeechPlayButtonListeners();
-                this._restartAudioAndPlay();
+                console.log(`Setup event listener on play button.`);
+                playButton.addEventListener('touchstart', ()=>{this._restartAudioAndPlay()});
+                playButton.setAttribute("ready", "true");
             }
         }
+        return promise;
     }
-    return super.play(currentTime, onFinish, onError, onInterrupt);
   }
 
   pause(currentTime) {
